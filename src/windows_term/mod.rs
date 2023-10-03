@@ -21,8 +21,9 @@ use windows_sys::Win32::System::Console::{
     FillConsoleOutputAttribute, FillConsoleOutputCharacterA, GetConsoleCursorInfo, GetConsoleMode,
     GetConsoleScreenBufferInfo, GetNumberOfConsoleInputEvents, GetStdHandle, ReadConsoleInputW,
     SetConsoleCursorInfo, SetConsoleCursorPosition, SetConsoleMode, SetConsoleTitleW,
-    CONSOLE_CURSOR_INFO, CONSOLE_SCREEN_BUFFER_INFO, COORD, INPUT_RECORD, KEY_EVENT,
-    KEY_EVENT_RECORD, STD_ERROR_HANDLE, STD_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE,
+    WriteConsoleInputW, CONSOLE_CURSOR_INFO, CONSOLE_SCREEN_BUFFER_INFO, COORD, INPUT_RECORD,
+    INPUT_RECORD_0, KEY_EVENT, KEY_EVENT_RECORD, KEY_EVENT_RECORD_0, STD_ERROR_HANDLE, STD_HANDLE,
+    STD_INPUT_HANDLE, STD_OUTPUT_HANDLE,
 };
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::VIRTUAL_KEY;
 
@@ -467,6 +468,37 @@ fn get_key_event_count() -> io::Result<u32> {
     } else {
         Ok(event_count)
     }
+}
+
+pub fn write_to_input() -> io::Result<()> {
+    let handle = get_stdin_handle()?;
+    let mut buffer: INPUT_RECORD = unsafe { mem::zeroed() };
+    buffer.EventType = KEY_EVENT as u16;
+    buffer.Event = INPUT_RECORD_0 {
+        KeyEvent: KEY_EVENT_RECORD {
+            bKeyDown: 1,
+            wRepeatCount: 1,
+            wVirtualKeyCode: 65,
+            wVirtualScanCode: 30,
+            dwControlKeyState: 0,
+            uChar: KEY_EVENT_RECORD_0 { UnicodeChar: 97 },
+        },
+    };
+    let mut events_written: u32 = unsafe { mem::zeroed() };
+
+    let success = unsafe { WriteConsoleInputW(handle, &mut buffer, 1, &mut events_written) };
+
+    if success == 0 {
+        return Err(io::Error::last_os_error());
+    }
+    if events_written != 1 {
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            "WriteConsoleInput returned no written events, but expected to write one.",
+        ));
+    }
+
+    Ok(())
 }
 
 fn read_key_event() -> io::Result<KEY_EVENT_RECORD> {

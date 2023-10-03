@@ -279,6 +279,14 @@ impl Term {
         }
     }
 
+    pub fn unblock(&self) -> io::Result<()> {
+        if self.is_tty {
+            write_to_input()
+        } else {
+            Ok(())
+        }
+    }
+
     /// Read one line of input.
     ///
     /// This does not include the trailing newline.  If the terminal is not

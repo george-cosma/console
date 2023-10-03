@@ -39,6 +39,13 @@ pub fn read_secure() -> io::Result<String> {
     ))
 }
 
+pub fn write_to_input() -> io::Result<()> {
+    Err(io::Error::new(
+        io::ErrorKind::Other,
+        "unsupported operation",
+    ))
+}
+
 pub fn read_single_key() -> io::Result<Key> {
     Err(io::Error::new(
         io::ErrorKind::Other,
